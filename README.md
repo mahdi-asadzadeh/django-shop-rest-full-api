@@ -1,4 +1,4 @@
-# Django Rest Full Api
+# About The Project
   The project is a jewelry store, the price of gold is momentary and it is written with new Rest Full Api architecture
 
 ## Technologies used in this project:
