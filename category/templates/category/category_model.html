@@ -1,0 +1,10 @@
+{% if category_model %}
+
+    {% for item in category_model %}
+        <option value="{{item.id}}">{{item.name}}</option>
+    {% endfor %}
+
+{% else %}
+    <option value="">------------</option>
+{% endif %}
+

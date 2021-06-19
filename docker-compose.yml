@@ -1,0 +1,105 @@
+version: '3'
+
+
+services:
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - main
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:latest
+    networks:
+      - main
+    ports:
+      - "5672:5672"
+    restart: on-failure
+
+  postgres:
+    container_name: postgres
+    image: postgres
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=postgres
+    networks:
+      - main
+    ports:
+      - '5432:5432'
+    restart: on-failure
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  celery_worker:
+    build: .
+    container_name: celery_worker
+    command: "celery -A config worker --loglevel=INFO"
+    depends_on:
+      - app
+      - rabbitmq
+      - postgres
+    environment:
+      - C_FORCE_ROOT="true"
+    networks:
+      - main
+    restart: on-failure
+
+  celery_beat:
+    build: .
+    container_name: celery_beat
+    command: "celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler"
+    depends_on:
+      - app
+      - rabbitmq
+      - postgres
+      - celery_worker
+    environment:
+       - C_FORCE_ROOT="true"
+    networks:
+      - main
+    restart: on-failure
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - .:/app
+      - static_file:/app/static
+      - media_file:/app/media
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - main
+      - nginx_network
+    container_name: app
+    command: sh -c "python manage.py makemigrations && python manage.py migrate && gunicorn config.wsgi -b 0.0.0.0:8000"
+    depends_on:
+      - rabbitmq
+      - postgres
+      - redis
+
+
+networks:
+  main:
+    external: true
+    
+  nginx_network:
+    external: true
+
+    
+volumes:
+  postgres_data:
+    external: true
+
+  static_file:
+    external: true
+  
+  media_file:
+    external: true

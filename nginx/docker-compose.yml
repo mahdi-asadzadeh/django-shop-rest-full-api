@@ -1,0 +1,26 @@
+version: '3'
+
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - static_file:/app/static
+      - media_file:/app/media
+    networks:
+      - nginx_network
+
+volumes:
+  static_file:
+    external: true
+
+  media_file:
+    external: true
+        
+networks:
+  nginx_network:
+    external: true

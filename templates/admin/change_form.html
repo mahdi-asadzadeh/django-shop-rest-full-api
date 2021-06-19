@@ -1,0 +1,149 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_modify %}
+
+{% block extrahead %}{{ block.super }}
+<script src="{% url 'admin:jsi18n' %}"></script>
+{{ media }}
+{% endblock %}
+
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static "admin/css/forms.css" %}">
+
+{% endblock %}
+
+{% block coltype %}colM{% endblock %}
+
+{% block bodyclass %}{{ block.super }} app-{{ opts.app_label }} model-{{ opts.model_name }} change-form{% endblock %}
+
+{% if not is_popup %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; {% if has_view_permission %}<a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>{% else %}{{ opts.verbose_name_plural|capfirst }}{% endif %}
+&rsaquo; {% if add %}{% blocktranslate with name=opts.verbose_name %}Add {{ name }}{% endblocktranslate %}{% else %}{{ original|truncatewords:"18" }}{% endif %}
+</div>
+{% endblock %}
+{% endif %}
+
+{% block content %}<div id="content-main">
+{% block object-tools %}
+{% if change %}{% if not is_popup %}
+  <ul class="object-tools">
+    {% block object-tools-items %}
+      {% change_form_object_tools %}
+    {% endblock %}
+  </ul>
+{% endif %}{% endif %}
+{% endblock %}
+<form {% if has_file_field %}enctype="multipart/form-data" {% endif %}{% if form_url %}action="{{ form_url }}" {% endif %}method="post" id="{{ opts.model_name }}_form" novalidate>{% csrf_token %}{% block form_top %}{% endblock %}
+<div>
+{% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
+{% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
+{% if save_on_top %}{% block submit_buttons_top %}{% submit_row %}{% endblock %}{% endif %}
+{% if errors %}
+    <p class="errornote">
+    {% if errors|length == 1 %}{% translate "Please correct the error below." %}{% else %}{% translate "Please correct the errors below." %}{% endif %}
+    </p>
+    {{ adminform.form.non_field_errors }}
+{% endif %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+  {% include "admin/includes/fieldset.html" %}
+{% endfor %}
+{% endblock %}
+
+{% block after_field_sets %}{% endblock %}
+
+{% block inline_field_sets %}
+{% for inline_admin_formset in inline_admin_formsets %}
+    {% include inline_admin_formset.opts.template %}
+{% endfor %}
+{% endblock %}
+
+{% block after_related_objects %}{% endblock %}
+
+{% block submit_buttons_bottom %}{% submit_row %}{% endblock %}
+
+{% block admin_change_form_document_ready %}
+    <script id="django-admin-form-add-constants"
+            src="{% static 'admin/js/change_form.js' %}"
+            {% if adminform and add %}
+                data-model-name="{{ opts.model_name }}"
+            {% endif %}
+            async>
+    </script>
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    <script>
+
+      django.jQuery(document).ready(function(){
+      $('.field-is_rate_fixed').hide(); 
+      $('.field-provider_gold_rate').hide();
+      $('.field-provider_diamond_price').show(); 
+      $('#stone_set-group').hide();
+
+      $(function() {
+          $('body').on('change', '#id_gold_or_jewelry', function(e) {
+
+            $("#id_is_rate_fixed").prop('checked', false)
+            $("#id_provider_diamond_price").val(null)
+            $("#id_provider_gold_rate").val(null)
+
+            var gold_or_jewelry = $(this).val();
+            function toggleVerified(value) {
+                if (value == 'on'){ 
+                    $('.field-is_rate_fixed').toggle('hide');
+                    $('.field-provider_gold_rate').toggle('hide'); 
+                    $('.field-provider_diamond_price').toggle( 'hide' ); 
+                    $('#stone_set-group').toggle('show');
+                }
+            };
+            toggleVerified(gold_or_jewelry);
+          });
+
+          $("#id_category_main,option").change(function () {
+            $('#id_category_material').html('<option value="">------------</option>')
+            $('#id_category_model').html('<option value="">------------</option>')
+            $('#id_category_model').html('<option value="">------------</option>')
+    
+            var material_id = $(this).val();
+            var url_material = "http://localhost:8000/category/category_material/"+material_id; 
+            $.ajax({                       
+              url: url_material,                 
+              success: function (data) {   
+                $('#id_category_material').html(data)
+              },
+              error: function (xhr, ajaxOptions, thrownError) {
+                $('#id_category_material').html('<option value="">------------</option>')
+              }
+            });
+
+          });
+
+          $("#id_category_material,option").change(function () {
+    
+            var model_id = $(this).val();
+            var url_model = "http://localhost:8000/category/category_model/"+model_id; 
+            $.ajax({                       
+              url: url_model,                 
+              success: function (data) {   
+                $('#id_category_model').html(data)
+              },
+              error: function (xhr, ajaxOptions, thrownError) {
+                $('#id_category_model').html('<option value="">------------</option>')
+              }
+            });
+          });
+      });
+
+      })
+      </script>
+{% endblock %}
+
+{# JavaScript for prepopulated fields #}
+{% prepopulated_fields_js %}
+
+</div>
+</form></div>
+{% endblock %}
