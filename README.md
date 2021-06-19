@@ -1,4 +1,4 @@
-# backend
+# Django Rest Full Api
 
 
 ## Technologies used in this project:
